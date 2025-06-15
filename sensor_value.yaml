@@ -1,0 +1,31 @@
+blueprint:
+  name: Schätzung der aktuellen Messung aus 24h-Mittelwert
+  description: >
+    Berechnet die aktuelle Messung aus einem gleitenden 24h-Mittelwert.
+    Speichert automatisch den alten Mittelwert und verwendet die Zeitdifferenz zum letzten Update.
+  domain: automation
+  input:
+    mittelwert_sensor:
+      name: 24h‑Mittelwert‑Sensor
+      selector:
+        entity:
+          domain: sensor
+    altwert_input_number:
+      name: Input Number für alten Mittelwert
+      selector:
+        entity:
+          domain: input_number
+
+trigger:
+  - platform: state
+    entity_id: !input mittelwert_sensor
+
+variables:
+  neuer_mittelwert: "{{ states(trigger.entity_id) | float(0) }}"
+
+action:
+  - service: input_number.set_value
+    data:
+      entity_id: !input altwert_input_number
+      value: "{{ neuer_mittelwert }}"
+mode: restart
