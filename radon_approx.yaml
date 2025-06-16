@@ -27,25 +27,5 @@ trigger:
     entity_id: !input mittelwert_sensor
 
 action:
-  - service: input_number.set_value
-    target:
-      entity_id: !input geschaetzt_input_number
-    data:
-      value: >
-        {% set m_neu = states('{{ i.mittelwert_sensor }}') | float(0) %}
-        {% set m_alt = states('{{ i.altwert_input_number }}') | float(0) %}
-        {% set dt = (as_timestamp(now()) - as_timestamp(states('{{ i.mittelwert_sensor }}').last_changed)) / 3600 %}
-        {% if dt > 0 %}
-          {{ ((m_neu * 24 - m_alt * (24 - dt)) / dt) | round(1) }}
-        {% else %}
-          0
-        {% endif %}
-
-  - service: input_number.set_value
-    target:
-      entity_id: !input altwert_input_number
-    data:
-      value: >
-        {{ states('{{ i.mittelwert_sensor }}') | float(0) }}
-
-mode: single
+  - variables:
+      m_neu: "{{ states(input.mittelwert_sensor) | float(
