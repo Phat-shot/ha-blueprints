@@ -1,0 +1,56 @@
+blueprint:
+  name: Radon – Exakte Schätzung des aktuellen Werts (variabler Abstand)
+  description: >
+    Berechnet den aktuellen Messwert auf Basis des alten und neuen 24h-Mittelwerts
+    und des variablen Zeitabstands. Speichert das Ergebnis in einem Input Number.
+    Ideal zur Annäherung des tatsächlichen Radonwerts.
+
+  domain: automation
+
+  input:
+    mittelwert_sensor:
+      name: 24h-Mittelwert-Sensor
+      selector:
+        entity:
+          domain: sensor
+    altwert_input_number:
+      name: Alter Mittelwert (Input Number)
+      selector:
+        entity:
+          domain: input_number
+    geschaetzt_input_number:
+      name: Schätzwert speichern in (Input Number)
+      selector:
+        entity:
+          domain: input_number
+
+trigger:
+  - platform: state
+    entity_id: !input mittelwert_sensor
+
+action:
+  - variables:
+      m_neu: "{{ states(trigger.entity_id) | float(0) }}"
+      m_alt: "{{ states(!input altwert_input_number) | float(0) }}"
+      dt: >
+        {{ (as_timestamp(now()) - as_timestamp(states[!input mittelwert_sensor].last_changed)) / 3600 }}
+      wert: >
+        {% if dt > 0 %}
+          {{ ((m_neu * 24 - m_alt * (24 - dt)) / dt) | round(1) }}
+        {% else %}
+          0
+        {% endif %}
+
+  - service: input_number.set_value
+    target:
+      entity_id: !input geschaetzt_input_number
+    data:
+      value: "{{ wert }}"
+
+  - service: input_number.set_value
+    target:
+      entity_id: !input altwert_input_number
+    data:
+      value: "{{ m_neu }}"
+
+mode: restart
