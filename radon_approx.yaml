@@ -1,8 +1,8 @@
 blueprint:
   name: Radon – Exakte Schätzung des aktuellen Werts (variabler Abstand)
   description: >
-    Berechnet den geschätzten aktuellen Radonwert auf Basis des alten und neuen 24h-Mittelwerts
-    sowie der Zeitdifferenz. Speichert das Ergebnis in einem Input Number.
+    Berechnet den geschätzten aktuellen Radonwert auf Basis des alten und neuen
+    24h-Mittelwerts sowie der Zeitdifferenz. Speichert das Ergebnis in einem Input Number.
   domain: automation
 
   input:
@@ -26,17 +26,15 @@ trigger:
   - platform: state
     entity_id: !input mittelwert_sensor
 
-variables:
-  mittelwert_entity: !input mittelwert_sensor
-  altwert_entity: !input altwert_input_number
-
 action:
-  - variables:
-      m_neu: "{{ states(mittelwert_entity) | float(0) }}"
-      m_alt: "{{ states(altwert_entity) | float(0) }}"
-      dt: >
-        {{ (as_timestamp(now()) - as_timestamp(states[mittelwert_entity].last_changed)) / 3600 }}
-      wert: >
+  - service: input_number.set_value
+    target:
+      entity_id: !input geschaetzt_input_number
+    data:
+      value: >
+        {% set m_neu = states('{{ i.mittelwert_sensor }}') | float(0) %}
+        {% set m_alt = states('{{ i.altwert_input_number }}') | float(0) %}
+        {% set dt = (as_timestamp(now()) - as_timestamp(states('{{ i.mittelwert_sensor }}').last_changed)) / 3600 %}
         {% if dt > 0 %}
           {{ ((m_neu * 24 - m_alt * (24 - dt)) / dt) | round(1) }}
         {% else %}
@@ -45,12 +43,9 @@ action:
 
   - service: input_number.set_value
     target:
-      entity_id: !input geschaetzt_input_number
-    data:
-      value: "{{ wert }}"
-
-  - service: input_number.set_value
-    target:
       entity_id: !input altwert_input_number
     data:
-      value: "{{ m_n_
+      value: >
+        {{ states('{{ i.mittelwert_sensor }}') | float(0) }}
+
+mode: single
